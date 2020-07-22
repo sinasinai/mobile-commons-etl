@@ -44,7 +44,7 @@ API_INCREMENTAL_KEYS = {
     "campaigns": None,
     "messages": "start_time",
 }
-MASTER_CAMPAIGN_ID = "169115"
+MASTER_CAMPAIGN_ID = "PUT MASTER CAMPAIGN ID HERE"
 
 ENDPOINT_KEY = {
     1: {"campaigns": "campaigns", "sent_messages": "messages", "messages": "messages"},

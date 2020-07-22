@@ -10,8 +10,16 @@ A set of ETL scripts & utility functions based on the [API documentation](https:
 
 `MC_USER` = String, Mobile Commons username/email.
 
-`MC_PWD` = String, Mobile Commons password.
+`MC_PASSWORD` = String, Mobile Commons password.
 
 `SCHEMA` = String, target warehouse schema you're loading data to.
 
-`TABLE_PREFIX` = Table name prepend you'd like to affix to the tables you're loading. E.g. If your `TABLE_PREFIX` is `mobile_commons`, the table name loaded will be `{SCHEMA}.mobile_commons_{table}`
+`TABLE_PREFIX` = Table name prepend you'd like to affix to the tables you're loading. E.g. If your `TABLE_PREFIX` is `mobile_commons`, the table name loaded will be `{SCHEMA}.mobile_commons_{table}`.
+
+### Miscellaneous
+
+`columns.json` - Dict, Contains a pre-mapped set of columns to load into the warehouse post-processing of XML responses from the Mobile Commons endpoints & ensure consistency.
+
+`mobile_commons_etl.get_page_count()` - Function, used to determine the total number of pages a query results in when page count values in response are not available.
+
+The `sent_messages` endpoint is notoriously slow, and I've opted to extract messages by looping & filtering by campaign as that seems to speed up the performance. `MASTER_CAMPAIGN_ID` is hardcoded at the top of the scripts for exclusion since the Master Campaign is an aggregate of the other campaigns, but this can be converted to an environmental variable as you all see fit.
