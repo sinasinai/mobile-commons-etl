@@ -1,0 +1,177 @@
+{
+	"profiles": [
+		"id",
+		"first_name",
+		"last_name",
+		"phone_number",
+		"email",
+		"status",
+		"created_at",
+		"updated_at",
+		"opted_out_at",
+		"opted_out_source",
+    "source_id",
+    "source_message_id",
+    "source_name",
+    "source_opt_in_path_id",
+    "source_type",
+    "address_city",
+    "address_country",
+    "address_postal_code",
+    "address_state",
+    "address_street1",
+    "address_street2",
+    "last_saved_districts_congressional_district",
+    "last_saved_districts_split_district",
+    "last_saved_districts_state_lower_district",
+    "last_saved_districts_state_upper_district",
+    "last_saved_location_city",
+    "last_saved_location_country",
+    "last_saved_location_latitude",
+    "last_saved_location_longitude",
+    "last_saved_location_postal_code",
+    "last_saved_location_precision",
+    "last_saved_location_state"
+	],
+
+	"groups": [
+		"id",
+		"type",
+		"status",
+		"name",
+		"size"
+	],
+
+	"group_members": [
+		"id",
+		"email",
+		"first_name",
+		"last_name",
+		"status",
+		"created_at",
+		"opted_out_at",
+		"opted_out_source"
+	],
+
+	"campaigns": [
+		"id",
+		"name",
+		"active",
+		"description",
+		"tags",
+		"tags_tag"
+	],
+
+	"campaign_subscribers": [
+		"id",
+		"profile_id",
+		"phone_number",
+		"activated_at",
+		"opted_out_at"
+	],
+
+	"messages": [
+		"approved",
+		"id",
+		"type",
+		"body",
+		"campaign_active",
+		"campaign_id",
+		"campaign_name",
+		"carrier_name",
+		"keyword",
+		"keyword_id",
+		"keyword_name",
+		"keyword_opt_in_path_id",
+		"mdata_active",
+		"mdata_id",
+		"mdata_name",
+		"message_template_id",
+		"mms",
+		"multipart",
+		"next_id_id",
+		"phone_number",
+		"previous_id_id",
+		"profile",
+		"received_at"
+	],
+
+
+	"sent_messages": [
+		"id",
+		"status",
+		"type",
+		"body",
+		"campaign_active",
+		"campaign_id",
+		"campaign_name",
+		"message_template_id",
+		"mms",
+		"multipart",
+		"next_id_id",
+		"phone_number",
+		"previous_id_id",
+		"profile",
+		"sent_at"
+	],
+
+	"broadcasts": [
+		"id",
+		"status",
+		"automated",
+		"body",
+		"campaign_active",
+		"campaign_id",
+		"campaign_name",
+		"delivery_time",
+		"estimated_recipients_count",
+		"excluded_groups",
+		"excluded_groups_group",
+		"excluded_groups_group_id",
+		"excluded_groups_group_name",
+		"excluded_groups_group_type",
+		"include_subscribers",
+		"included_groups",
+		"included_groups_group",
+		"included_groups_group_id",
+		"included_groups_group_name",
+		"included_groups_group_type",
+		"localtime",
+		"name",
+		"opt_outs_count",
+		"replies_count",
+		"tags",
+		"tags_tag",
+		"throttled"
+	],
+
+	"tags": [
+		"id",
+		"name",
+		"taggable_object",
+		"taggable_object_id",
+		"taggable_object_type"
+	],
+
+	"tinyurls": [
+		"id",
+		"created_at",
+		"description",
+		"host",
+		"key",
+		"mode",
+		"name",
+		"url"
+	],
+
+	"clicks": [
+		"id",
+		"clicked_url",
+		"created_at",
+		"http_referer",
+		"remote_addr",
+		"url",
+		"user_agent"
+	]
+
+}
