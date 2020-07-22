@@ -4,9 +4,9 @@ A set of ETL scripts & utility functions based on the [API documentation](https:
 
 ### Environmental Variables
 
-`FULL_REBUILD_FLAG` - String, value "True" or "False". Determines whether a full or incremental extraction based on latest timestamp in the warehouse is performed.
+`FULL_REBUILD_FLAG` - String, value "True" or "False". Determines whether a full or incremental extraction is run based on latest timestamp in the warehouse.
 
-`CIVIS_API_KEY` = String, Civis API key, not necessary if your repurpose to use another client.
+`CIVIS_API_KEY` = String, Civis API key, not necessary if you use to use another client.
 
 `MC_USER` = String, Mobile Commons username/email.
 
