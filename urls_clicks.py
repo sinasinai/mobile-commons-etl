@@ -46,7 +46,9 @@ MIN_PAGES = 1
 MAX_PAGES = 20000
 LIMIT = 500
 AUTH = aiohttp.BasicAuth(MC_USER, password=MC_PWD)
-SEMAPHORE = asyncio.BoundedSemaphore(160)
+
+# Mobile Commons API allows up to 160 concurrent connections but they asked us to reduce to 80 for now
+SEMAPHORE = asyncio.BoundedSemaphore(80)
 
 client = civis.APIClient()
 
@@ -55,9 +57,6 @@ retry_adapter = HTTPAdapter(max_retries=retries)
 
 http = requests.Session()
 http.mount("https://secure.mcommons.com/api/", retry_adapter)
-
-
-# Mobile Commons API only allows up to 160 concurrent connections
 
 
 def main():
@@ -126,10 +125,9 @@ def main():
                     INDEX_SET[index]: i,
                 }
 
-                subkeywords = {**extrakeys, **keywords}
-                subtap = mc.mobile_commons_connection(
-                    ENDPOINT, full_build, **subkeywords
-                )
+                keywords.update(extrakeys)
+                subtap = mc.mobile_commons_connection(ENDPOINT, full_build, **keywords)
+                subtap.index = INDEX_SET[index]
                 subtap.fetch_latest_timestamp()
 
                 print(
@@ -140,11 +138,11 @@ def main():
                     file=sys.stdout,
                 )
 
-                if subtap.page_count_get(**subkeywords, page=MIN_PAGES) > 0:
+                if subtap.page_count_get(**keywords, page=MIN_PAGES) > 0:
 
                     print("Guessing page count...")
 
-                    subtap.page_count = subtap.get_page_count(**subkeywords)
+                    subtap.page_count = subtap.get_page_count(**keywords)
 
                     print(
                         "There are {} pages in the result set for endpoint {} and TINYURL {}".format(
@@ -152,7 +150,7 @@ def main():
                         )
                     )
 
-                    data = subtap.ping_endpoint(**subkeywords)
+                    data = subtap.ping_endpoint(**keywords)
                     template = pd.DataFrame(columns=COLUMNS[ENDPOINT], dtype="str")
 
                     if data is not None:

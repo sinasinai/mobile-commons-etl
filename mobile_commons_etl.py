@@ -10,6 +10,7 @@ import pytz
 import dateparser
 import asyncio
 import aiohttp
+import numpy as np
 
 from pandas.io.json import json_normalize
 
@@ -38,6 +39,8 @@ class mobile_commons_connection:
         self.group_id = kwargs.get("group_id", None)
         self.campaign_id = kwargs.get("campaign_id", None)
         self.url_id = kwargs.get("url_id", None)
+        self.index = None
+        self.index_id = self.group_id or self.url_id or self.campaign_id
         self.db_incremental_key = kwargs.get("db_incremental_key", None)
         self.schema = kwargs.get("schema", "public")
         self.table_prefix = kwargs.get("table_prefix", "")
@@ -52,6 +55,9 @@ class mobile_commons_connection:
 
         if self.campaign_id is not None:
             params["campaign_id"] = self.campaign_id
+
+        if (self.api_incremental_key is not None) & (self.last_timestamp is not None):
+            params[self.api_incremental_key] = self.last_timestamp
 
         if self.url_id is not None:
             params["url_id"] = self.url_id
@@ -88,14 +94,35 @@ class mobile_commons_connection:
         """Wrapper for asynchronous calls that then have results collated into a dataframe"""
 
         loop = asyncio.get_event_loop()
-        res = loop.run_until_complete(
-            asyncio.gather(
-                *(
-                    self.get_page(page, **kwargs)
-                    for page in range(1, self.page_count + 1)
+
+        # Chunks async calls into bundles if page count is greater than 500
+
+        if self.page_count > 500:
+            partition_size = int(
+                math.ceil(
+                    self.page_count ** (1 - math.log(500) / math.log(self.page_count))
                 )
             )
-        )
+            breaks = [
+                int(n)
+                for n in np.linspace(1, self.page_count + 1, partition_size).tolist()
+            ]
+        else:
+            breaks = [1, self.page_count + 1]
+
+        res = []
+
+        for b in range(1, len(breaks)):
+
+            temp = loop.run_until_complete(
+                asyncio.gather(
+                    *(
+                        self.get_page(page, **kwargs)
+                        for page in range(breaks[b - 1], breaks[b])
+                    )
+                )
+            )
+            res += temp
 
         endpoint_key_0 = self.endpoint_key[0][self.endpoint]
         endpoint_key_1 = self.endpoint_key[1][self.endpoint]
@@ -122,7 +149,7 @@ class mobile_commons_connection:
             c.replace(".", "_").replace("@", "").replace("@_", "").replace("_@", "")
             for c in df_agg.columns
         ]
-        df_agg = df_agg[self.columns[self.endpoint]]
+        df_agg = df_agg.loc[:, df_agg.columns.isin(self.columns[self.endpoint])]
         return df_agg
 
     def get_latest_record(self, endpoint):
@@ -130,20 +157,36 @@ class mobile_commons_connection:
 
         table = f"{self.schema}.{self.table_prefix}_{endpoint}"
 
+        index_filter = """"""
+        if self.index is not None:
+            index_filter = (
+                """ where """ + self.index + """::integer = """ + str(self.index_id)
+            )
+
         sql = (
-            """select max("""
+            """select max(case when """
             + self.db_incremental_key
-            + """) as latest_date from {}""".format(table)
+            + """ = 'None' then null else """
+            + self.db_incremental_key
+            + """::timestamp end) as latest_date from {}""".format(table)
+            + index_filter
         )
 
-        date = civis.io.read_civis_sql(sql, "TMC", use_pandas=True)["latest_date"][0]
-        utc = pytz.timezone("UTC")
-        return dateparser.parse(date).astimezone(utc).isoformat()
+        date = civis.io.read_civis_sql(sql, "TMC", use_pandas=True)
+
+        if date.shape[0] > 0:
+            latest_date = date["latest_date"][0]
+            utc = pytz.timezone("UTC")
+            dateparser.parse(latest_date).astimezone(utc).isoformat()
+        else:
+            latest_date = None
+
+        return latest_date
 
     def fetch_latest_timestamp(self):
         """Handler for pulling latest record if incremental build"""
 
-        if not self.full_build:
+        if (not self.full_build) & (self.db_incremental_key is not None):
 
             print(
                 "Getting latest record for endpoint {}...".format(
@@ -152,11 +195,12 @@ class mobile_commons_connection:
                 flush=True,
                 file=sys.stdout,
             )
-            self.last_timestamp = get_latest_record(self.endpoint, db_incremental_key)
+            self.last_timestamp = self.get_latest_record(self.endpoint)
             print(f"Latest timestamp: {self.last_timestamp}")
 
         else:
             self.last_timestamp = None
+            self.full_build = False
 
         return self.last_timestamp
 
@@ -174,7 +218,7 @@ class mobile_commons_connection:
         if self.limit is not None:
             params["limit"] = self.limit
 
-        if self.api_incremental_key is not None:
+        if (self.api_incremental_key is not None) & (self.last_timestamp is not None):
             params[self.api_incremental_key] = self.last_timestamp
 
         if self.group_id is not None:
@@ -200,6 +244,9 @@ class mobile_commons_connection:
 
         if formatted_response.get("@page_count") is not None:
             num_results = int(formatted_response.get("@page_count"))
+
+        elif formatted_response.get("page_count") is not None:
+            num_results = int(formatted_response.get("page_count"))
 
         elif formatted_response.get(endpoint_key_0) is not None:
             num_results = 1
@@ -235,18 +282,26 @@ class mobile_commons_connection:
 
         if self.full_build:
             civis.io.dataframe_to_civis(
-                df,
+                df.astype(str),
                 "TMC",
                 f"{self.schema}.{self.table_prefix}_{endpoint}",
                 client=self.load_client,
                 existing_table_rows="drop",
+                table_columns=[
+                    {"name": c, "sqlType": "varchar(65535)"}
+                    for c in self.columns[self.endpoint]
+                ],
             ).result()
 
         else:
             civis.io.dataframe_to_civis(
-                df,
+                df.astype(str),
                 "TMC",
                 f"{self.schema}.{self.table_prefix}_{endpoint}",
                 client=self.load_client,
                 existing_table_rows="append",
+                table_columns=[
+                    {"name": c, "sqlType": "varchar(65535)"}
+                    for c in self.columns[self.endpoint]
+                ],
             ).result()

@@ -45,7 +45,9 @@ MIN_PAGES = 1
 MAX_PAGES = 20000
 LIMIT = 1000
 AUTH = aiohttp.BasicAuth(MC_USER, password=MC_PWD)
-SEMAPHORE = asyncio.BoundedSemaphore(160)
+
+# Mobile Commons API allows up to 160 concurrent connections but they asked us to reduce to 80 for now
+SEMAPHORE = asyncio.BoundedSemaphore(80)
 
 client = civis.APIClient()
 
@@ -54,8 +56,6 @@ retry_adapter = HTTPAdapter(max_retries=retries)
 
 http = requests.Session()
 http.mount("https://secure.mcommons.com/api/", retry_adapter)
-
-# Mobile Commons API only allows up to 160 concurrent connections
 
 
 def main():

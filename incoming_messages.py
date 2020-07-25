@@ -19,7 +19,6 @@ from pandas.io.json import json_normalize
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-
 FULL_REBUILD_FLAG = os.getenv("FULL_REBUILD_FLAG")
 CIVIS_API_KEY = os.getenv("CIVIS_API_KEY")
 MC_USER = os.getenv("MC_USERNAME")
@@ -27,19 +26,29 @@ MC_PWD = os.getenv("MC_PASSWORD")
 SCHEMA = os.getenv("SCHEMA")
 TABLE_PREFIX = os.getenv("TABLE_PREFIX")
 
+
 URL = "https://secure.mcommons.com/api/"
-ALL_ENDPOINTS = ["group_members"]
-INDEX_SET = {"groups": "group_id"}
+ALL_ENDPOINTS = ["messages"]
+INDEX_SET = {"campaigns": "campaign_id"}
 
 with open("./columns.json") as cols:
     COLUMNS = json.load(cols)
 
-RS_INCREMENTAL_KEYS = {"group_members": "updated_at", "groups": None}
-API_INCREMENTAL_KEYS = {"group_members": "from", "groups": None}
+RS_INCREMENTAL_KEYS = {
+    "sent_messages": "sent_at",
+    "campaigns": None,
+    "messages": "received_at",
+}
+API_INCREMENTAL_KEYS = {
+    "sent_messages": "start_time",
+    "campaigns": None,
+    "messages": "start_time",
+}
+MASTER_CAMPAIGN_ID = "169115"
 
 ENDPOINT_KEY = {
-    1: {"groups": "groups", "group_members": "group"},
-    0: {"groups": "group", "group_members": "profile"},
+    1: {"campaigns": "campaigns", "sent_messages": "messages", "messages": "messages"},
+    0: {"campaigns": "campaign", "sent_messages": "message", "messages": "message"},
 }
 
 MIN_PAGES = 1
@@ -60,6 +69,9 @@ http.mount("https://secure.mcommons.com/api/", retry_adapter)
 
 
 def main():
+
+    # SENT_MESSAGES endpoint is very slow, found a quicker workaround that
+    # involves querying sent messages for each campaign  instead
 
     if str.lower(FULL_REBUILD_FLAG) == "true":
 
@@ -109,10 +121,11 @@ def main():
                 str.upper(index), flush=True, file=sys.stdout
             )
         )
-
         tap.load(df, index)
 
         indices = set(data["id"])
+        indices = [str(c) for c in indices if str(c) != MASTER_CAMPAIGN_ID]
+
         index_results = []
 
         for i in indices:
@@ -124,28 +137,27 @@ def main():
                     "db_incremental_key": RS_INCREMENTAL_KEYS[ENDPOINT],
                     INDEX_SET[index]: i,
                 }
-
                 keywords.update(extrakeys)
                 subtap = mc.mobile_commons_connection(ENDPOINT, full_build, **keywords)
                 subtap.index = INDEX_SET[index]
                 subtap.fetch_latest_timestamp()
 
                 print(
-                    "Kicking off extraction for endpoint {} GROUP {}...".format(
+                    "Kicking off extraction for endpoint {} CAMPAIGN {}...".format(
                         str.upper(ENDPOINT), i
                     ),
                     flush=True,
                     file=sys.stdout,
                 )
 
-                if subtap.page_count_get(**keywords, page=MIN_PAGES) > 0:
+                ### Page count in results is given for messages endpoints, no need to guess
 
-                    print("Guessing page count...")
+                subtap.page_count = subtap.page_count_get(**keywords, page=MIN_PAGES)
 
-                    subtap.page_count = subtap.get_page_count(**keywords)
+                if subtap.page_count > 0:
 
                     print(
-                        "There are {} pages in the result set for endpoint {} and GROUP {}".format(
+                        "There are {} pages in the result set for endpoint {} and CAMPAIGN {}".format(
                             subtap.page_count, str.upper(ENDPOINT), i
                         )
                     )
@@ -164,7 +176,7 @@ def main():
                 else:
 
                     print(
-                        "No new results to load for endpoint {} GROUP {}".format(
+                        "No new results to load for endpoint {} CAMPAIGN {}".format(
                             str.upper(ENDPOINT), i
                         )
                     )
