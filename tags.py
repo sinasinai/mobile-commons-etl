@@ -5,7 +5,6 @@ import pandas as pd
 import xmltodict
 import json
 import os
-import civis
 import sys
 import math
 import datetime
@@ -21,7 +20,6 @@ from pandas.io.json import json_normalize
 
 
 FULL_REBUILD_FLAG = os.getenv("FULL_REBUILD_FLAG")
-CIVIS_API_KEY = os.getenv("CIVIS_API_KEY")
 MC_USER = os.getenv("MC_USERNAME")
 MC_PWD = os.getenv("MC_PASSWORD")
 SCHEMA = os.getenv("SCHEMA")
@@ -29,9 +27,6 @@ TABLE_PREFIX = os.getenv("TABLE_PREFIX")
 
 URL = "https://secure.mcommons.com/api/"
 ALL_ENDPOINTS = ["tags"]
-
-with open("./columns.json") as cols:
-    COLUMNS = json.load(cols)
 
 RS_INCREMENTAL_KEYS = {"tags": None}
 API_INCREMENTAL_KEYS = {"tags": None}
@@ -43,8 +38,6 @@ AUTH = aiohttp.BasicAuth(MC_USER, password=MC_PWD)
 
 # Mobile Commons API allows up to 160 concurrent connections but they asked us to reduce to 80 for now
 SEMAPHORE = asyncio.BoundedSemaphore(80)
-
-client = civis.APIClient()
 
 retries = Retry(total=3, status_forcelist=[429, 500, 502, 503, 504], backoff_factor=1)
 retry_adapter = HTTPAdapter(max_retries=retries)
@@ -75,10 +68,8 @@ def main():
             "limit": LIMIT,
             "min_pages": MIN_PAGES,
             "max_pages": MAX_PAGES,
-            "columns": COLUMNS,
             "semaphore": SEMAPHORE,
             "auth": AUTH,
-            "client": client,
             "schema": SCHEMA,
             "table_prefix": TABLE_PREFIX,
             "db_incremental_key": RS_INCREMENTAL_KEYS[ENDPOINT],
@@ -107,11 +98,11 @@ def main():
             )
 
             data = tap.ping_endpoint(**keywords)
-            template = pd.DataFrame(columns=COLUMNS[ENDPOINT], dtype="str")
+            template = pd.DataFrame(columns=tap.columns)
 
             if data is not None:
 
-                df = pd.concat([template, data.astype("str")], sort=True, join="inner")
+                df = pd.concat([template, data], sort=True, join="inner")
                 print(
                     "Loading data from endpoint {} into database...".format(
                         str.upper(ENDPOINT), flush=True, file=sys.stdout

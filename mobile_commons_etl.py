@@ -2,7 +2,6 @@ import pandas as pd
 import xmltodict
 import json
 import os
-import civis
 import sys
 import math
 import datetime
@@ -11,8 +10,19 @@ import dateparser
 import asyncio
 import aiohttp
 import numpy as np
+import sqlalchemy
+from sqlalchemy import create_engine
 
 from pandas.io.json import json_normalize
+
+DB_NAME = os.getenv("DB_NAME")
+DB_HOST = os.getenv("DB_HOST")
+DB_CREDENTIAL_USERNAME = os.getenv("DB_CREDENTIAL_USERNAME")
+DB_CREDENTIAL_PASSWORD = os.getenv("DB_CREDENTIAL_PASSWORD")
+DB_PORT = os.getenv("DB_PORT")
+
+with open("./columns.json") as cols:
+    COLUMNS = json.load(cols)
 
 
 class mobile_commons_connection:
@@ -25,7 +35,7 @@ class mobile_commons_connection:
         self.limit = kwargs.get("limit", None)
         self.base = kwargs.get("base", None)
         self.endpoint_key = kwargs.get("endpoint_key", None)
-        self.columns = kwargs.get("columns", None)
+        self.columns = COLUMNS[endpoint]
         self.page_count = kwargs.get("page_count", None)
         self.session = kwargs.get("session", None)
         self.user = kwargs.get("user", None)
@@ -35,7 +45,6 @@ class mobile_commons_connection:
         self.min_pages = kwargs.get("min_pages", None)
         self.max_pages = kwargs.get("max_pages", None)
         self.last_timestamp = kwargs.get("last_timestamp", None)
-        self.load_client = kwargs.get("client", None)
         self.group_id = kwargs.get("group_id", None)
         self.campaign_id = kwargs.get("campaign_id", None)
         self.url_id = kwargs.get("url_id", None)
@@ -44,6 +53,7 @@ class mobile_commons_connection:
         self.db_incremental_key = kwargs.get("db_incremental_key", None)
         self.schema = kwargs.get("schema", "public")
         self.table_prefix = kwargs.get("table_prefix", "")
+        self.sql_engine = create_engine('postgresql://' + DB_CREDENTIAL_USERNAME +':' + DB_CREDENTIAL_PASSWORD + '@' + DB_HOST + ':' + DB_PORT + '/' + DB_NAME)
 
     async def get_page(self, page, retries=5, **kwargs):
         """Base asynchronous request function"""
@@ -149,7 +159,7 @@ class mobile_commons_connection:
             c.replace(".", "_").replace("@", "").replace("@_", "").replace("_@", "")
             for c in df_agg.columns
         ]
-        df_agg = df_agg.loc[:, df_agg.columns.isin(self.columns[self.endpoint])]
+        df_agg = df_agg.loc[:, df_agg.columns.isin(list(self.columns.keys()))]
         return df_agg
 
     def get_latest_record(self, endpoint):
@@ -172,7 +182,7 @@ class mobile_commons_connection:
             + index_filter
         )
 
-        date = civis.io.read_civis_sql(sql, "TMC", use_pandas=True)
+        date = pd.read_sql(sql, self.engine)
 
         if date.shape[0] > 0:
             latest_date = date["latest_date"][0]
@@ -277,31 +287,49 @@ class mobile_commons_connection:
             print(f"Page count converged! Final count: {guess}")
             return guess
 
+
+    def map_dtypes(self,value):
+
+        if value == 'int64':
+            return sqlalchemy.types.BIGINT()
+        elif value == 'str':
+            return sqlalchemy.types.NVARCHAR(length=65535)
+        elif value == 'float64':
+            return sqlalchemy.types.Float(asdecimal=True)
+        elif value == 'datetime64[ns, <tz>]':
+            return sqlalchemy.types.DateTime(timezone=True)
+        else:
+            return sqlalchemy.types.NVARCHAR(length=65535)
+
+
     def load(self, df, endpoint):
         """Loads to database"""
 
+        mapper =  {k: self.map_dtypes(v) for k,v in self.columns.items()}
+        import ipdb; ipdb.set_trace()
+        df = df.astype(self.columns)
+
         if self.full_build:
-            civis.io.dataframe_to_civis(
-                df.astype(str),
-                "TMC",
-                f"{self.schema}.{self.table_prefix}_{endpoint}",
-                client=self.load_client,
-                existing_table_rows="drop",
-                table_columns=[
-                    {"name": c, "sqlType": "varchar(65535)"}
-                    for c in self.columns[self.endpoint]
-                ],
-            ).result()
+            df.to_sql(
+                    f"{self.table_prefix}_{endpoint}",
+                    self.sql_engine,
+                    schema=self.schema,
+                    if_exists='replace',
+                    index=False,
+                    dtype = mapper,
+                    method='multi',
+                    chunksize=10000
+                    )
+
 
         else:
-            civis.io.dataframe_to_civis(
-                df.astype(str),
-                "TMC",
-                f"{self.schema}.{self.table_prefix}_{endpoint}",
-                client=self.load_client,
-                existing_table_rows="append",
-                table_columns=[
-                    {"name": c, "sqlType": "varchar(65535)"}
-                    for c in self.columns[self.endpoint]
-                ],
-            ).result()
+                df.to_sql(
+                        f"{self.table_prefix}_{endpoint}",
+                        self.sql_engine,
+                        schema=self.schema,
+                        if_exists='append',
+                        index=False,
+                        dtype = mapper,
+                        method='multi',
+                        chunksize=10000
+                        )
