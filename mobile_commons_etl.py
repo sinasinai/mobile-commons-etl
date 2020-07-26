@@ -15,7 +15,7 @@ from sqlalchemy import create_engine
 
 from pandas.io.json import json_normalize
 
-DB_NAME = os.getenv("DB_NAME")
+DB_DATABASE = os.getenv("DB_DATABASE")
 DB_HOST = os.getenv("DB_HOST")
 DB_CREDENTIAL_USERNAME = os.getenv("DB_CREDENTIAL_USERNAME")
 DB_CREDENTIAL_PASSWORD = os.getenv("DB_CREDENTIAL_PASSWORD")
@@ -53,7 +53,18 @@ class mobile_commons_connection:
         self.db_incremental_key = kwargs.get("db_incremental_key", None)
         self.schema = kwargs.get("schema", "public")
         self.table_prefix = kwargs.get("table_prefix", "")
-        self.sql_engine = create_engine('postgresql://' + DB_CREDENTIAL_USERNAME +':' + DB_CREDENTIAL_PASSWORD + '@' + DB_HOST + ':' + DB_PORT + '/' + DB_NAME)
+        self.sql_engine = create_engine(
+            "postgresql://"
+            + DB_CREDENTIAL_USERNAME
+            + ":"
+            + DB_CREDENTIAL_PASSWORD
+            + "@"
+            + DB_HOST
+            + ":"
+            + DB_PORT
+            + "/"
+            + DB_DATABASE
+        )
 
     async def get_page(self, page, retries=5, **kwargs):
         """Base asynchronous request function"""
@@ -147,7 +158,8 @@ class mobile_commons_connection:
                 ):
                     json_xml = json.loads(json.dumps(xmltodict.parse(r)))
                     page_result = json_normalize(
-                        json_xml["response"][endpoint_key_1][endpoint_key_0]
+                        json_xml["response"][endpoint_key_1][endpoint_key_0],
+                        max_level=0,
                     )
                     res_list.append(page_result)
             except:
@@ -159,6 +171,14 @@ class mobile_commons_connection:
             c.replace(".", "_").replace("@", "").replace("@_", "").replace("_@", "")
             for c in df_agg.columns
         ]
+        import ipdb
+
+        ipdb.set_trace()
+        for c in set(df_agg.columns):
+            print('"' + str(c) + '"')
+        import ipdb
+
+        ipdb.set_trace()
         df_agg = df_agg.loc[:, df_agg.columns.isin(list(self.columns.keys()))]
         return df_agg
 
@@ -287,48 +307,45 @@ class mobile_commons_connection:
             print(f"Page count converged! Final count: {guess}")
             return guess
 
+    def map_dtypes(self, value):
 
-    def map_dtypes(self,value):
-
-        if value == 'int64':
+        if value == "int64":
             return sqlalchemy.types.BIGINT()
-        elif value == 'str':
+        elif value == "str":
             return sqlalchemy.types.NVARCHAR(length=65535)
-        elif value == 'float64':
+        elif value == "float64":
             return sqlalchemy.types.Float(asdecimal=True)
-        elif value == 'datetime64[ns, <tz>]':
+        elif value == "datetime64[ns, <tz>]":
             return sqlalchemy.types.DateTime(timezone=True)
         else:
             return sqlalchemy.types.NVARCHAR(length=65535)
 
-
     def load(self, df, endpoint):
         """Loads to database"""
 
-        mapper =  {k: self.map_dtypes(v) for k,v in self.columns.items()}
+        mapper = {k: self.map_dtypes(v) for k, v in self.columns.items()}
         df = df.astype(self.columns)
 
         if self.full_build:
             df.to_sql(
-                    f"{self.table_prefix}_{endpoint}",
-                    self.sql_engine,
-                    schema=self.schema,
-                    if_exists='replace',
-                    index=False,
-                    dtype = mapper,
-                    method='multi',
-                    chunksize=10000
-                    )
-
+                f"{self.table_prefix}_{endpoint}",
+                self.sql_engine,
+                schema=self.schema,
+                if_exists="replace",
+                index=False,
+                dtype=mapper,
+                method="multi",
+                chunksize=10000,
+            )
 
         else:
-                df.to_sql(
-                        f"{self.table_prefix}_{endpoint}",
-                        self.sql_engine,
-                        schema=self.schema,
-                        if_exists='append',
-                        index=False,
-                        dtype = mapper,
-                        method='multi',
-                        chunksize=10000
-                        )
+            df.to_sql(
+                f"{self.table_prefix}_{endpoint}",
+                self.sql_engine,
+                schema=self.schema,
+                if_exists="append",
+                index=False,
+                dtype=mapper,
+                method="multi",
+                chunksize=10000,
+            )

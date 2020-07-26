@@ -142,13 +142,11 @@ def main():
                     )
 
                     data = subtap.ping_endpoint(**keywords)
-                    template = pd.DataFrame(columns=subtap.columns )
+                    template = pd.DataFrame(columns=subtap.columns)
 
                     if data is not None:
 
-                        df = pd.concat(
-                            [template, data], sort=True, join="inner"
-                        )
+                        df = pd.concat([template, data], sort=True, join="inner")
                         df[INDEX_SET[index]] = str(i)
                         index_results.append(df)
 

@@ -146,9 +146,7 @@ def main():
 
                     if data is not None:
 
-                        df = pd.concat(
-                            [template, data], sort=True, join="inner"
-                        )
+                        df = pd.concat([template, data], sort=True, join="inner")
                         df[INDEX_SET[index]] = str(i)
                         index_results.append(df)
 
