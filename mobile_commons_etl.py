@@ -171,14 +171,6 @@ class mobile_commons_connection:
             c.replace(".", "_").replace("@", "").replace("@_", "").replace("_@", "")
             for c in df_agg.columns
         ]
-        import ipdb
-
-        ipdb.set_trace()
-        for c in set(df_agg.columns):
-            print('"' + str(c) + '"')
-        import ipdb
-
-        ipdb.set_trace()
         df_agg = df_agg.loc[:, df_agg.columns.isin(list(self.columns.keys()))]
         return df_agg
 
