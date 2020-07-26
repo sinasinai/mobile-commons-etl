@@ -306,7 +306,6 @@ class mobile_commons_connection:
         """Loads to database"""
 
         mapper =  {k: self.map_dtypes(v) for k,v in self.columns.items()}
-        import ipdb; ipdb.set_trace()
         df = df.astype(self.columns)
 
         if self.full_build:
