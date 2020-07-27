@@ -318,7 +318,7 @@ class mobile_commons_connection:
         """Loads to database"""
 
         mapper = {k: self.map_dtypes(v) for k, v in self.columns.items()}
-        df = df.replace({np.nan: None})
+        df = df.replace({None: np.nan})
         df = df.astype(self.columns)
 
         if self.full_build:
