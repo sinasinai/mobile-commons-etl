@@ -2,6 +2,8 @@
 
 A set of ETL scripts & utility functions based on the [API documentation](https://community.uplandsoftware.com/hc/en-us/articles/204494185-REST-API) that uses the [AsyncIO library](https://docs.python.org/3/library/asyncio.html) to load the extracted data into a (in this case Redshift) warehouse using the [Civis API](https://civis-python.readthedocs.io/en/stable/). This can easily be modified to use other clients.
 
+Start up Bash shell in Docker container by typing `docker-compose run etl` in Terminal, otherwise run scripts how you see fit e.g. `python profiles.py`. I schedule these in a DAG using Civis Workflows, though you can easily do the same using Airflow or some other task scheduler. 
+
 ### Environmental Variables
 
 `FULL_REBUILD_FLAG` - String, value "True" or "False". Determines whether a full or incremental extraction is run based on latest timestamp in the warehouse.
