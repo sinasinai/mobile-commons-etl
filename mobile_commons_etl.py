@@ -309,6 +309,8 @@ class mobile_commons_connection:
             return sqlalchemy.types.Float(asdecimal=True)
         elif value == "datetime64[ns, <tz>]":
             return sqlalchemy.types.DateTime(timezone=True)
+        elif value == "bool":
+            return sqlalchemy.types.BOOLEAN()
         else:
             return sqlalchemy.types.NVARCHAR(length=65535)
 
@@ -316,6 +318,7 @@ class mobile_commons_connection:
         """Loads to database"""
 
         mapper = {k: self.map_dtypes(v) for k, v in self.columns.items()}
+        df = df.replace({np.nan: None})
         df = df.astype(self.columns)
 
         if self.full_build:
