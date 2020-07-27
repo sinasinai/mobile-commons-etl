@@ -319,7 +319,10 @@ class mobile_commons_connection:
 
         mapper = {k: self.map_dtypes(v) for k, v in self.columns.items()}
         df = df.replace({None: np.nan})
-        df = df.astype(self.columns)
+        x = set(df.columns)
+        y = set(self.columns.keys())
+        final_cols = { i : self.columns[i] for i in x.intersection(y)}
+        df = df.astype(final_cols)
 
         if self.full_build:
             df.to_sql(

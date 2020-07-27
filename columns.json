@@ -55,7 +55,7 @@
 	},
 
 	"messages": {
-		"approved" : "str",
+		"approved" : "bool",
 		"id" : "float64",
 		"type" : "str",
 		"body" : "str",
@@ -63,13 +63,12 @@
 		"campaign_id": "float64",
 		"carrier_name" : "str",
 		"keyword" : "str",
-		"mdata" : "str",
 		"message_template_id": "float64",
 		"mms" : "bool",
 		"multipart" : "bool",
-		"next_id" : "float64",
+		"next_id" : "str",
 		"phone_number" : "str",
-		"previous_id" : "float64",
+		"previous_id" : "str",
 		"profile" : "float64",
 		"received_at" : "datetime64[ns, UTC]"
 	},
