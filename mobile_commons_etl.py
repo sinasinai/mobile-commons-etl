@@ -194,10 +194,10 @@ class mobile_commons_connection:
             + index_filter
         )
 
-        date = pd.read_sql(sql, self.engine)
+        date = pd.read_sql(sql, self.sql_engine)
 
-        if date.shape[0] > 0:
-            latest_date = date["latest_date"][0]
+        if (date.shape[0] > 0) & (date["latest_date"][0] is not None):
+            latest_date = str(date["latest_date"][0])
             utc = pytz.timezone("UTC")
             dateparser.parse(latest_date).astimezone(utc).isoformat()
         else:
