@@ -34,12 +34,12 @@ RS_INCREMENTAL_KEYS = {
     "campaigns": None,
     "messages": "received_at",
 }
+
 API_INCREMENTAL_KEYS = {
     "sent_messages": "start_time",
     "campaigns": None,
     "messages": "start_time",
 }
-MASTER_CAMPAIGN_ID = "169115"
 
 ENDPOINT_KEY = {
     1: {"campaigns": "campaigns", "sent_messages": "messages", "messages": "messages"},
@@ -112,11 +112,9 @@ def main():
                 str.upper(index), flush=True, file=sys.stdout
             )
         )
+        
         tap.load(df, index)
-
         indices = set(data["id"])
-        indices = [str(c) for c in indices if str(c) != MASTER_CAMPAIGN_ID]
-
         index_results = []
 
         for i in indices:
