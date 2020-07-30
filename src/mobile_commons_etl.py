@@ -11,6 +11,8 @@ import asyncio
 import aiohttp
 import numpy as np
 import sqlalchemy
+import mobile_commons_data as mcd
+
 from sqlalchemy import create_engine
 
 from pandas.io.json import json_normalize
@@ -21,9 +23,7 @@ DB_CREDENTIAL_USERNAME = os.getenv("DB_CREDENTIAL_USERNAME")
 DB_CREDENTIAL_PASSWORD = os.getenv("DB_CREDENTIAL_PASSWORD")
 DB_PORT = os.getenv("DB_PORT")
 
-with open("/src/columns.json") as cols:
-    COLUMNS = json.load(cols)
-
+COLUMNS = mcd.columns()
 
 class mobile_commons_connection:
     def __init__(self, endpoint, full_build, **kwargs):
@@ -35,7 +35,7 @@ class mobile_commons_connection:
         self.limit = kwargs.get("limit", None)
         self.base = kwargs.get("base", None)
         self.endpoint_key = kwargs.get("endpoint_key", None)
-        self.columns = COLUMNS[endpoint]
+        self.columns = COLUMNS.columns[endpoint]
         self.page_count = kwargs.get("page_count", None)
         self.session = kwargs.get("session", None)
         self.user = kwargs.get("user", None)
