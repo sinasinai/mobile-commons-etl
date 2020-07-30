@@ -1,0 +1,15 @@
+version: "3.2"
+
+services:
+  etl:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - /Users/sinasinai/git/indivisible/data-engineering/etl/mobile_commons/src:/src
+      - /Users/sinasinai/git/indivisible/data-engineering/etl/mobile_commons/airflow:/airflow
+    container_name: mc_etl
+    stdin_open: true
+    tty: true
+    ports:
+      - "8080:8080"
