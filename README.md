@@ -2,7 +2,25 @@
 
 A set of ETL scripts & utility functions based on the [API documentation](https://community.uplandsoftware.com/hc/en-us/articles/204494185-REST-API) that uses the [AsyncIO library](https://docs.python.org/3/library/asyncio.html) to load the extracted data into a (in this case Redshift) warehouse using the [Civis API](https://civis-python.readthedocs.io/en/stable/). This can easily be modified to use other clients.
 
-Start up Bash shell in Docker container by typing `docker-compose run etl` in Terminal, otherwise run scripts how you see fit e.g. `python profiles.py`. I schedule these in a DAG using Civis Workflows, though you can easily do the same using Airflow or some other task scheduler. 
+Start up Bash shell in Docker container by typing `docker-compose run etl` in Terminal, otherwise run scripts how you see fit e.g. `python profiles.py`. I schedule these in a DAG using Civis Workflows, though you can easily do the same using Airflow or some other task scheduler (which is also included here).
+
+Getting started:
+
+Run the following while in `/src`:
+
+1. `docker-compose build`
+2. `docker-compose run --service-ports etl`
+
+You should now be in a running container! If you'd like to run a local Dockerized Airflow instance, make sure to run the following commands:
+
+1. (Optional) `export AIRFLOW_HOME="/airflow"`
+2. `airflow initdb` to initialize the Airflow SQLite DB
+3. `airflow webserver &` (by default to port 8080)
+4. `airflow scheduler &` to kick off the scheduler
+5. Navigate to `localhost:8080` to find the Airflow dashboard!
+
+I've had issues running the webserver & scheduler in daemon mode before, and have resorted to bashing in a separate session to the container running `docker exec -ti <container_id> bash` and running the remaining commands. Airflow has great [docs](https://airflow.apache.org/docs/stable/start.html) and I've included my very simple DAG & config files for reference.
+
 
 ### Environmental Variables
 
