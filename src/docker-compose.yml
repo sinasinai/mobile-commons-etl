@@ -10,6 +10,7 @@ services:
       - /Users/sinasinai/git/indivisible/data-engineering/etl/mobile_commons/airflow:/airflow
     container_name: mc_etl
     stdin_open: true
+    env_file: env.list
     tty: true
     ports:
       - "8080:8080"
