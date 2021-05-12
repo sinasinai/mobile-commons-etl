@@ -89,7 +89,7 @@ class mobile_commons_connection:
         url = f"{self.base}{self.endpoint}"
         print(f"Fetching page {page}")
 
-        TIMEOUT = aiohttp.ClientTimeout(total=60 * 60)
+        TIMEOUT = aiohttp.ClientTimeout(total=720)
 
         attempts = 1
         data = None
@@ -319,7 +319,7 @@ class mobile_commons_connection:
         """Loads to database"""
 
         mapper = {k: self.map_dtypes(v) for k, v in self.columns.items()}
-        df = df.replace({None: np.nan})
+        #df = df.replace({None: np.nan})
         x = set(df.columns)
         y = set(self.columns.keys())
         final_cols = {i: self.columns[i] for i in x.intersection(y)}

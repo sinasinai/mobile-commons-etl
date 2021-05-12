@@ -6,10 +6,10 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - /Users/sinasinai/git/indivisible/data-engineering/etl/mobile_commons/src:/src
-      - /Users/sinasinai/git/indivisible/data-engineering/etl/mobile_commons/airflow:/airflow
+      - /Users/mrestrepo/proj_mobile_commons/mobile_commons_etl/src:/src
     container_name: mc_etl
     stdin_open: true
+    env_file: env.list
     tty: true
     ports:
       - "8080:8080"

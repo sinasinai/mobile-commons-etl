@@ -5,7 +5,9 @@ A set of ETL scripts & utility functions based on the [API documentation](https:
 Start up Bash shell in Docker container by typing `docker-compose run etl` in Terminal, otherwise run scripts how you see fit e.g. `python profiles.py`. I schedule these in a DAG using Civis Workflows, though you can easily do the same using Airflow or some other task scheduler (which is also included here).
 
 Getting started:
-
+ACLU instructions:
+1. Add personal values to src/env.list
+2. edit the "volumes" in docker-compose.yml to match your local install of this repo
 Run the following while in `/src`:
 
 1. `docker-compose build`
